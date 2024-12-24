@@ -1,0 +1,10 @@
+# Environnement virtuel
+env/
+__pycache__/
+
+# Secrets
+config/secrets.json
+
+# Fichiers temporaires
+*.pyc
+*.log
