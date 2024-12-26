@@ -1,7 +1,7 @@
 import os
 import hashlib
 
-# Paramètres pour secp256k1
+# Paramètres de la courbe elliptique secp256k1 pour Bitcoin
 P = 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEFFFFFC2F
 A = 0
 B = 7
@@ -48,23 +48,23 @@ def scalar_multiplication(k, point):
 
     return result
 
+def generate_private_key():
+    """Générer une clé privée de 256 bits (32 octets)."""
+    return os.urandom(32)
+
 def private_key_to_public_key(private_key):
     """Générer une clé publique à partir de la clé privée."""
     int_private_key = int.from_bytes(private_key, 'big')
     public_key = scalar_multiplication(int_private_key, G)
     return public_key
 
-def generate_private_key():
-    """Générer une clé privée de 256 bits (32 octets)."""
-    return os.urandom(32)
-
 def public_key_to_address(public_key):
     """Convertir une clé publique en adresse Bitcoin."""
-    public_key_bytes = public_key_to_bytes(public_key)
+    public_key_bytes = public_key_to_bytes(public_key)  # Appel à la fonction définie ci-dessous
     sha256 = hashlib.sha256(public_key_bytes).digest()
     ripemd160 = hashlib.new('ripemd160', sha256).digest()
 
-    # Préfixe réseau pour les adresses Bitcoin
+    # Préfixe réseau pour les adresses Bitcoin (0x00 pour le réseau principal)
     prefixed_key = b'\x00' + ripemd160
 
     # Calcul du checksum (4 premiers octets du double SHA-256)
@@ -98,17 +98,3 @@ def base58_encode(data):
             break
 
     return encoded
-
-# Exemple d'utilisation
-if __name__ == "__main__":
-    # Générer une clé privée
-    private_key = generate_private_key()
-    print("Clé privée générée :", private_key.hex())
-
-    # Générer une clé publique
-    public_key = private_key_to_public_key(private_key)
-    print("Clé publique générée :", public_key)
-
-    # Générer une adresse Bitcoin
-    address = public_key_to_address(public_key)
-    print("Adresse Bitcoin générée :", address)
