@@ -1,15 +1,6 @@
-# generate_seed.py
-import mnemonic
-from bitcoinlib.keys import Key
+from mnemonic import Mnemonic
 
 def generate_seed_phrase():
-    # Générer une clé privée
-    key = Key()
-
-    # Générer la seed phrase (mnémonique BIP39)
-    mnemo = mnemonic.Mnemonic("english")
-    seed_phrase = mnemo.generate(strength=128)  # 128 bits = 12 mots
-    print("Seed Phrase : ", seed_phrase)
-
-if __name__ == "__main__":
-    generate_seed_phrase()
+    mnemo = Mnemonic("english")
+    seed_phrase = mnemo.generate(strength=128)  # Assurez-vous que la génération est correcte
+    return seed_phrase

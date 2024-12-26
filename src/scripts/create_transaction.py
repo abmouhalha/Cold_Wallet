@@ -1,5 +1,4 @@
-from bitcoinlib.wallets import Wallet
-from bitcoinlib.transactions import Transaction
+import hashlib
 
 def create_transaction():
     try:
@@ -7,14 +6,18 @@ def create_transaction():
         recipient_address = input("Entrez l'adresse du destinataire : ")
         amount = float(input("Entrez le montant en BTC : "))
 
-        # Créer une transaction non signée
-        tx = Transaction()
+        # Simuler une transaction (les entrées et sorties)
+        tx = {
+            "inputs": [
+                {"txid": "sample_txid", "vout": 0}  # Exemple de donnée, nécessite txid réel
+            ],
+            "outputs": [
+                {"address": recipient_address, "amount": amount}
+            ]
+        }
 
-        # Ajouter des entrées et des sorties
-        tx.add_input("txid_input", 0)  # ID de la transaction source (à personnaliser)
-        tx.add_output(recipient_address, amount)  # Montant à envoyer
-
-        print("Transaction créée : ", tx.as_dict())
+        # Imprimer la transaction simulée
+        print("Transaction créée : ", tx)
         return tx
     except Exception as e:
         print("Erreur lors de la création de la transaction :", str(e))

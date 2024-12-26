@@ -11,7 +11,7 @@ G = (Gx, Gy)
 N = 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141
 
 def point_addition(P1, P2):
-    """Addition de points sur une courbe elliptique."""
+    """Addition de points sur la courbe elliptique secp256k1."""
     if P1 == (0, 0):
         return P2
     if P2 == (0, 0):
@@ -60,18 +60,17 @@ def generate_private_key():
 
 def public_key_to_address(public_key):
     """Convertir une clé publique en adresse Bitcoin."""
-    # 1. SHA-256 puis RIPEMD-160
     public_key_bytes = public_key_to_bytes(public_key)
     sha256 = hashlib.sha256(public_key_bytes).digest()
     ripemd160 = hashlib.new('ripemd160', sha256).digest()
 
-    # 2. Ajouter le préfixe réseau (0x00 pour les adresses Bitcoin standard)
+    # Préfixe réseau pour les adresses Bitcoin
     prefixed_key = b'\x00' + ripemd160
 
-    # 3. Calculer le checksum
+    # Calcul du checksum (4 premiers octets du double SHA-256)
     checksum = hashlib.sha256(hashlib.sha256(prefixed_key).digest()).digest()[:4]
 
-    # 4. Ajouter le checksum et encoder en Base58
+    # Ajouter le checksum et encoder en Base58
     final_key = prefixed_key + checksum
     return base58_encode(final_key)
 
@@ -86,12 +85,12 @@ def base58_encode(data):
     """Encodage Base58."""
     alphabet = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz'
     encoded = ''
-    num = int.from_bytes(data, 'big')  # Convertir les données en un entier
+    num = int.from_bytes(data, 'big')
     while num > 0:
         num, rem = divmod(num, 58)
         encoded = alphabet[rem] + encoded
 
-    # Ajouter des préfixes '1' pour les zéros initiaux dans les données
+    # Ajouter des préfixes '1' pour les zéros initiaux
     for byte in data:
         if byte == 0:
             encoded = '1' + encoded
