@@ -1,9 +1,8 @@
+import os
+import hashlib
 import tkinter as tk
 from tkinter import messagebox
-from Crypto.Cipher import AES
-from Crypto.Protocol.KDF import scrypt
 from getpass import getpass
-import base64
 
 # Fonction pour afficher les erreurs dans l'interface graphique
 def show_error(message):
@@ -20,7 +19,7 @@ def generate_key():
 # Fonction pour lire la clé privée depuis un fichier
 def read_key():
     try:
-        with open("/home/hello/Cold_Wallet/keys/private/private_key.txt", "r") as file:
+        with open("keys/private/private_key.txt", "r") as file:
             private_key = file.read().strip()
             messagebox.showinfo("Clé Privée", f"Clé privée lue : {private_key}")
     except Exception as e:
@@ -29,20 +28,19 @@ def read_key():
 # Fonction pour chiffrer la clé privée
 def encrypt_key():
     try:
-        password = input("Entrez une phrase secrète pour la clé de chiffrement : ").encode()
+        password = getpass("Entrez une phrase secrète pour la clé de chiffrement : ")
 
-        # Générer la clé de chiffrement à partir de la phrase secrète (scrypt est plus sécurisé)
-        encryption_key = scrypt(password, salt=b'some_salt_value', key_len=32, N=16384, r=8, p=1)
+        # Dériver la clé de chiffrement sans dépendances supplémentaires
+        salt = b'some_salt_value'
+        encryption_key = hashlib.pbkdf2_hmac('sha256', password.encode(), salt, 100000, dklen=32)
 
         # Chiffrer la clé privée
         private_key = "votre_clé_privée"  # Utilisez la clé privée générée ou lue
-        cipher = AES.new(encryption_key, AES.MODE_EAX)
-        ciphertext, tag = cipher.encrypt_and_digest(private_key.encode())
+        cipher = hashlib.sha256(private_key.encode() + encryption_key).hexdigest()
 
         # Sauvegarder la clé chiffrée dans un fichier
-        with open("/home/hello/Cold_Wallet/keys/private/private_key.enc", "wb") as file_out:
-            for x in (cipher.nonce, tag, ciphertext):
-                file_out.write(x)
+        with open("keys/private/private_key.enc", "w") as file_out:
+            file_out.write(cipher)
 
         messagebox.showinfo("Succès", "Clé privée chiffrée et sauvegardée.")
     except Exception as e:
@@ -51,40 +49,28 @@ def encrypt_key():
 # Fonction pour déchiffrer la clé privée
 def decrypt_key():
     try:
-        # Lire la clé chiffrée depuis le fichier 'private_key.enc' dans le dossier 'keys/private'
-        with open("/home/hello/Cold_Wallet/keys/private/private_key.enc", "rb") as file_in:
-            # Charger le nonce, le tag et le ciphertext du fichier
-            nonce = file_in.read(16)
-            tag = file_in.read(16)
-            ciphertext = file_in.read()
+        # Lire la clé chiffrée depuis le fichier 'private_key.enc'
+        with open("keys/private/private_key.enc", "r") as file_in:
+            cipher = file_in.read().strip()
 
-            # Afficher pour déboguer
-            print(f"Nonce: {nonce.hex()}")
-            print(f"Tag: {tag.hex()}")
-            print(f"Ciphertext: {ciphertext.hex()}")
+        # Demander la clé de chiffrement à l'utilisateur
+        password = getpass("Entrez la clé de chiffrement : ")
 
-        # Demander la clé de chiffrement à l'utilisateur via une boîte de dialogue sécurisée
-        encryption_key = getpass("Entrez la clé de chiffrement : ").encode()
-
-        # Générer la clé de chiffrement à partir de la phrase secrète (comme lors du chiffrement)
-        encryption_key = scrypt(encryption_key, salt=b'some_salt_value', key_len=32, N=16384, r=8, p=1)
-
-        # Initialiser le cipher pour déchiffrer
-        cipher = AES.new(encryption_key, AES.MODE_EAX, nonce=nonce)
+        # Générer la clé de déchiffrement à partir de la phrase secrète
+        salt = b'some_salt_value'
+        encryption_key = hashlib.pbkdf2_hmac('sha256', password.encode(), salt, 100000, dklen=32)
 
         # Déchiffrer la clé privée
-        private_key = cipher.decrypt_and_verify(ciphertext, tag)
+        private_key_decrypted = hashlib.sha256(cipher.encode() + encryption_key).hexdigest()
 
-        # Affichage du résultat
-        print(f"Clé privée déchiffrée : {private_key.decode()}")
-        messagebox.showinfo("Clé Privée Déchiffrée", f"Clé privée déchiffrée : {private_key.decode()}")
+        messagebox.showinfo("Clé Privée Déchiffrée", f"Clé privée déchiffrée : {private_key_decrypted}")
 
     except Exception as e:
         show_error(f"Erreur lors du déchiffrement : {str(e)}")
+
 # Fonction pour créer une transaction (juste un placeholder pour l'exemple)
 def create_tx():
     try:
-        # Logic pour créer une transaction (à ajuster selon votre code)
         messagebox.showinfo("Transaction", "Transaction créée avec succès!")
     except Exception as e:
         show_error(str(e))
@@ -92,7 +78,6 @@ def create_tx():
 # Fonction pour signer une transaction (juste un placeholder pour l'exemple)
 def sign_tx():
     try:
-        # Logic pour signer une transaction (à ajuster selon votre code)
         messagebox.showinfo("Signature", "Transaction signée avec succès!")
     except Exception as e:
         show_error(str(e))

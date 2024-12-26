@@ -1,17 +1,115 @@
-from bitcoinlib.keys import Key
+import os
+import hashlib
 
-def generate_bitcoin_key():
-    # Générer une nouvelle clé privée
-    key = Key()
-    
-    # Clé privée en format WIF (Wallet Import Format)
-    private_key = key.wif()
-    
-    # Clé publique en format hexadécimal
-    public_key = key.public_hex
-    
-    print("Clé privée (WIF) : ", private_key)
-    print("Clé publique : ", public_key)
+# Paramètres pour secp256k1
+P = 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEFFFFFC2F
+A = 0
+B = 7
+Gx = 0x79BE667EF9DCBBAC55A06295CE870B07029BFCDB2DCE28D959F2815B16F81798
+Gy = 0x483ADA7726A3C4655DA4FBFC0E1108A8FD17B448A68554199C47D08FFB10D4B8
+G = (Gx, Gy)
+N = 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141
 
+def point_addition(P1, P2):
+    """Addition de points sur une courbe elliptique."""
+    if P1 == (0, 0):
+        return P2
+    if P2 == (0, 0):
+        return P1
+
+    x1, y1 = P1
+    x2, y2 = P2
+
+    if x1 == x2 and y1 != y2:
+        return (0, 0)
+
+    if x1 == x2:
+        # Doublage de point
+        m = (3 * x1 * x1 + A) * pow(2 * y1, -1, P) % P
+    else:
+        # Addition de points différents
+        m = (y2 - y1) * pow(x2 - x1, -1, P) % P
+
+    x3 = (m * m - x1 - x2) % P
+    y3 = (m * (x1 - x3) - y1) % P
+
+    return (x3, y3)
+
+def scalar_multiplication(k, point):
+    """Multiplication scalaire sur une courbe elliptique."""
+    result = (0, 0)
+    addend = point
+
+    while k:
+        if k & 1:
+            result = point_addition(result, addend)
+        addend = point_addition(addend, addend)
+        k >>= 1
+
+    return result
+
+def private_key_to_public_key(private_key):
+    """Générer une clé publique à partir de la clé privée."""
+    int_private_key = int.from_bytes(private_key, 'big')
+    public_key = scalar_multiplication(int_private_key, G)
+    return public_key
+
+def generate_private_key():
+    """Générer une clé privée de 256 bits (32 octets)."""
+    return os.urandom(32)
+
+def public_key_to_address(public_key):
+    """Convertir une clé publique en adresse Bitcoin."""
+    # 1. SHA-256 puis RIPEMD-160
+    public_key_bytes = public_key_to_bytes(public_key)
+    sha256 = hashlib.sha256(public_key_bytes).digest()
+    ripemd160 = hashlib.new('ripemd160', sha256).digest()
+
+    # 2. Ajouter le préfixe réseau (0x00 pour les adresses Bitcoin standard)
+    prefixed_key = b'\x00' + ripemd160
+
+    # 3. Calculer le checksum
+    checksum = hashlib.sha256(hashlib.sha256(prefixed_key).digest()).digest()[:4]
+
+    # 4. Ajouter le checksum et encoder en Base58
+    final_key = prefixed_key + checksum
+    return base58_encode(final_key)
+
+def public_key_to_bytes(public_key):
+    """Convertir une clé publique (tuple) en bytes pour le hashing."""
+    x, y = public_key
+    x_bytes = x.to_bytes(32, byteorder='big')
+    y_bytes = y.to_bytes(32, byteorder='big')
+    return b'\x04' + x_bytes + y_bytes  # Format non compressé
+
+def base58_encode(data):
+    """Encodage Base58."""
+    alphabet = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz'
+    encoded = ''
+    num = int.from_bytes(data, 'big')  # Convertir les données en un entier
+    while num > 0:
+        num, rem = divmod(num, 58)
+        encoded = alphabet[rem] + encoded
+
+    # Ajouter des préfixes '1' pour les zéros initiaux dans les données
+    for byte in data:
+        if byte == 0:
+            encoded = '1' + encoded
+        else:
+            break
+
+    return encoded
+
+# Exemple d'utilisation
 if __name__ == "__main__":
-    generate_bitcoin_key()
+    # Générer une clé privée
+    private_key = generate_private_key()
+    print("Clé privée générée :", private_key.hex())
+
+    # Générer une clé publique
+    public_key = private_key_to_public_key(private_key)
+    print("Clé publique générée :", public_key)
+
+    # Générer une adresse Bitcoin
+    address = public_key_to_address(public_key)
+    print("Adresse Bitcoin générée :", address)
