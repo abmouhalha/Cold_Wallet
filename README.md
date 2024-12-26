@@ -1,1 +1,2 @@
-pour compiler :(env) hello@hello-HP-EliteBook-x360-1030-G2:~/Cold_Wallet$ python scripts/manage_wallet.py 
+pour lancer l'interface graphique : python src/ui.py 
+pour lancer les testes : python tests/test_wallet.py
