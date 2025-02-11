@@ -20,6 +20,10 @@ def generate_key():
         # Demander le mot de passe à l'utilisateur
         password = getpass("Entrez un mot de passe pour chiffrer la clé privée: ")
 
+        if not password:
+            show_error("Le mot de passe ne peut pas être vide.")
+            return
+
         # Sauvegarder la clé privée chiffrée
         save_encrypted_private_key(private_key, password)
 
@@ -35,15 +39,20 @@ def generate_key():
         
         messagebox.showinfo("Succès", f"Clé privée chiffrée sauvegardée!\nAdresse : {address}")
     except Exception as e:
-        show_error(str(e))
+        show_error(f"Erreur lors de la génération ou de la sauvegarde de la clé : {str(e)}")
 
 def read_key():
     try:
         password = getpass("Entrez le mot de passe pour déchiffrer la clé privée: ")
+
+        if not password:
+            show_error("Le mot de passe ne peut pas être vide.")
+            return
+
         private_key = load_and_decrypt_private_key(password)
-        messagebox.showinfo("Clé Privée", f"Clé privée déchiffrée : {private_key}")
+        messagebox.showinfo("Clé Privée", "Clé privée déchiffrée avec succès.")
     except Exception as e:
-        show_error(str(e))
+        show_error(f"Erreur lors du déchiffrement de la clé : {str(e)}")
 
 def main():
     root = tk.Tk()

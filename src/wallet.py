@@ -1,3 +1,5 @@
+#https://github.com/bitcoinbook/bitcoinbook/blob/develop/ch04_keys.adoc
+
 import os
 import hashlib
 from security import encrypt_private_key, decrypt_private_key  # Assurez-vous que ces fonctions existent dans security.py
@@ -11,6 +13,34 @@ Gy = 0x483ADA7726A3C4655DA4FBFC0E1108A8FD17B448A68554199C47D08FFB10D4B8
 G = (Gx, Gy)
 N = 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141
 
+def generate_private_key():
+    """Générer une clé privée de 256 bits (32 octets), inférieure à n."""
+    while True:
+        private_key = os.urandom(32)  # Générer une clé privée de 256 bits
+        """1. Entropie théorique
+
+    32 octets correspondent à 256 bits.
+
+    Si les données sont parfaitement aléatoires, l'entropie est de 256 bits 
+    (car chaque bit peut être 0 ou 1 avec une probabilité égale et indépendante
+      des autres bits).
+        Événements matériels : mouvements de souris, frappes au clavier, délais entre les interruptions matérielles, etc.
+
+    Données environnementales : température du processeur, bruit du disque dur, etc.
+
+    Générateurs de nombres aléatoires matériels (HRNG) : certains processeurs modernes (comme ceux d'Intel ou AMD) incluent 
+    des circuits dédiés pour générer de l'entropie (par exemple, l'instruction RDRAND).
+
+    Sur les systèmes Unix (Linux, macOS, etc.), os.urandom utilise généralement /dev/urandom, qui est alimenté par un 
+    pool d'entropie géré par le noyau. Sur Windows, il utilise des API cryptographiques comme BCryptGenRandom
+    
+    hello@hello-HP-EliteBook-x360-1030-G2:~$ cat /proc/sys/kernel/random/entropy_avail
+    256
+"""
+        private_key_int = int.from_bytes(private_key, byteorder="big") #permet de convertir une séquence d'octets (un bytearray) en un entier (int)
+        if 0 < private_key_int < N:  # Vérifier si elle est valide
+            return private_key
+            
 # Addition de points sur la courbe elliptique secp256k1
 def point_addition(P1, P2):
     """Addition de points sur la courbe elliptique secp256k1."""
@@ -51,15 +81,12 @@ def scalar_multiplication(k, point):
 
     return result
 
-# Fonction pour générer une clé privée
-def generate_private_key():
-    """Générer une clé privée de 256 bits (32 octets)."""
-    return os.urandom(32)
+
 
 # Fonction pour convertir la clé privée en clé publique
 def private_key_to_public_key(private_key):
     """Générer une clé publique à partir de la clé privée."""
-    int_private_key = int.from_bytes(private_key, 'big')
+    int_private_key = int.from_bytes(private_key, 'big') #permet de convertir une séquence d'octets (un bytearray) en un entier (int)
     public_key = scalar_multiplication(int_private_key, G)
     return public_key
 
@@ -100,13 +127,14 @@ def base58_encode(data):
             break
     return encoded
 
-# Fonction pour sauvegarder la clé privée chiffrée
+""" Fonction pour sauvegarder la clé privée chiffrée"""
 def save_encrypted_private_key(private_key, password):
-    encrypted_key = encrypt_private_key(private_key.hex(), password)
+    """Sauvegarder la clé privée chiffrée."""
+    encrypted_key = encrypt_private_key(private_key, password)
     with open("keys/private/private_key.enc", "w") as file:
         file.write(encrypted_key)
 
-# Fonction pour charger et déchiffrer la clé privée
+""" Fonction pour charger et déchiffrer la clé privée"""
 def load_and_decrypt_private_key(password):
     with open("keys/private/private_key.enc", "r") as file:
         encrypted_key = file.read()
